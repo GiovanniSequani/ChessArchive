@@ -54,10 +54,8 @@ class Archivio:
                 results2[move].append(game["result"])
             elif not move in terminations:
                 results2[move] = [game["result"]]
-        if len(self.games) == 0:
-            print("Nessuna partita in archivio")
-            return pd.DataFrame()
-        elif len(results2) == 0:
+
+        if len(results2) == 0:
             print("Nessuna partita nell'archivio contiene questa mossa")
             self.go_back()
             return pd.DataFrame()
@@ -71,10 +69,11 @@ class Archivio:
             return ""
 
     def move(self, move) -> None:
-        self.chessboard.push_san(move)
-        self.fen.append(self.chessboard.fen()[:-(len(str(self.chessboard.halfmove_clock)) + len(str(self.chessboard.fullmove_number)) + 2)])
-        self.moves.append(move)
-        self.current_move += 1
+        if not move in ("1-0", "0-1", "1/2-1/2"):
+            self.chessboard.push_san(move)
+            self.fen.append(self.chessboard.fen()[:-(len(str(self.chessboard.halfmove_clock)) + len(str(self.chessboard.fullmove_number)) + 2)])
+            self.moves.append(move)
+            self.current_move += 1
     
     def go_back(self) -> None:
         self.moves = self.moves[:-1]
@@ -110,14 +109,32 @@ class Archivio:
         for move, results in results2.items():
             moves.append(move)
 
-            self.move(move)
-            stats = self.stats(by_fen)
-            self.go_back()
+            win = 0
+            loss = 0
+            draw = 0
+            f = 0
+            if move == "1-0":
+                f = len(results)
+                win = 1
+            elif move == "0-1":
+                f = len(results)
+                loss = 1
+            elif move == "1/2-1/2":
+                f = len(results)
+                draw = 1
+            else:
+                self.move(move)
+                stats = self.stats(by_fen)
+                self.go_back()
+                win = stats[1]
+                loss = stats[2]
+                draw = stats[3]
+                f = stats[0]
 
-            freq.append(stats[0])
-            wins.append(round(stats[1]*100/stats[0],1))
-            draws.append(round(stats[3]*100/stats[0],1))
-            losses.append(round(stats[2]*100/stats[0],1))
+            freq.append(f)
+            wins.append(round(win*100/f,1))
+            draws.append(round(draw*100/f,1))
+            losses.append(round(loss*100/f,1))
         
         result = pd.DataFrame({"freq":freq,  "1-0":wins, "0.5-0.5":draws, "0-1":losses}, index=moves)
         return result.sort_values(by="freq", ascending=False)
@@ -192,9 +209,8 @@ class Archivio:
         else:
             self.data = pd.DataFrame(data_dict)
 
-        if len(self.data) > 0:
-            self.data = self.data.sort_values(by=["date","endtime"])
-            self.data.index = list(range(1,len(self.data.index)+1))
+        self.data = self.data.sort_values(by=["date","endtime"])
+        self.data.index = list(range(1,len(self.data.index)+1))
 
         if select:
             self.select_data(self.white, self.black, self.result)
@@ -307,7 +323,7 @@ def annullaTutto():
         pkl.dump(arc, file)
 
 
-def evaluate(timelimit, pathEngine):
+def evaluate(timelimit):
     with open("arc.pkl", "rb") as file:
         arc = pkl.load(file)
 
@@ -332,7 +348,7 @@ def evaluate(timelimit, pathEngine):
     board = game.board()
     for move in game.mainline_moves():
         board.push(move)
-    engine = chess.engine.SimpleEngine.popen_uci(pathEngine)
+    engine = chess.engine.SimpleEngine.popen_uci("C:/Users/giova/OneDrive/Desktop/Chess analysis/chess engine/stockfish15/stockfish-windows-2022-x86-64-avx2.exe")
     movetimesec = timelimit
     limit=chess.engine.Limit(time=movetimesec)
     info = engine.analyse(board, limit)
@@ -341,7 +357,7 @@ def evaluate(timelimit, pathEngine):
 
     return max(min(score, 1000), -1000)/100
 
-def calcMove(timelimit, pathEngine):
+def calcMove(timelimit):
     with open("arc.pkl", "rb") as file:
         arc = pkl.load(file)
 
@@ -367,7 +383,7 @@ def calcMove(timelimit, pathEngine):
     board = game.board()
     for move in game.mainline_moves():
         board.push(move)
-    engine = chess.engine.SimpleEngine.popen_uci(pathEngine)
+    engine = chess.engine.SimpleEngine.popen_uci("C:/Users/giova/OneDrive/Desktop/Chess analysis/chess engine/stockfish15/stockfish-windows-2022-x86-64-avx2.exe")
     movetimesec = timelimit
     limit=chess.engine.Limit(time=movetimesec)
 
@@ -448,4 +464,3 @@ def creaFile(by_fen=False):
         arc = pkl.load(file)
 
     df_to_pgn(arc.get_games(by_fen), destination_path="temp")
-
