@@ -1,4 +1,4 @@
-This is Flask server which I used to review my chess games, in particular which moves I played and which moves played the opponent.
+This is Flask server which I used to review my chess games, in particular which moves I played and which moves the opponent played.
 
 You need to download an engine, such as stockfish 15, before running the code.
 You also have to donwload the .pgn files containing the games you want to add to the archive.
