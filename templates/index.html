@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Archivio scacchi</title>
+    <style>
+        html, body {
+            padding: 0;
+            margin: 0!important;
+        }
+        body{
+            width: available;
+            height: available;
+            background-color: #f0f8ff;
+        }
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+        th {
+            text-align: left;
+        }
+        #from1 {
+            display: flex;
+            flex-direction: column;
+        }
+        #from1 button {
+            width: 300px;
+            margin-bottom: 10px;
+        }
+        #from1 input {
+            margin-bottom: 10px;
+        }
+        #from1 label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .container {
+            width: 100%;
+            height: 100%;
+        }
+
+        .toppane {
+            padding: 5px;
+            width: 100%;
+            background-color: #c6e3fa;
+            padding-bottom: 5px;
+        }
+        .leftpane {
+            padding: 10px;
+            width: 34%;
+            height: 100vh;
+        }
+        .middlepane {
+            padding: 2%;
+            padding-top: 1%;
+            width: 36%;
+            height: 100vh;
+        }
+
+        .rightpane {
+            padding: 10px;
+            padding-top: 1%;
+            width: 30%;
+            height: 100vh;
+            background-color: #deeefc;
+        }
+        .d-flex {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="toppane">
+            <h2 style="padding: 10px;">CHESS ARCHIVE</h2>
+            <form id="form1"style="margin-bottom: 5px;">
+                <label for="stringa1">Add files .pgn into the directory '/downloaded' and then click Add games: </label>
+                <button type="button" id = "aggiungi-dati" onclick="aggiungiDati('aggiungi-dati')">Add games</button>
+            </form>
+            <form id="form1" style="margin-bottom: 10px;">
+                <label for="bianco">Bianco:</label>
+                <input type="text" id="bianco" name="bianco">
+                <label for="nero">Nero:</label>
+                <input type="text" id="nero" name="nero">
+                <label for="risultato">Risultato:</label>
+                <input type="text" id="risultato" name="risultato">
+                <button type="button" onclick="selezionaPartite('seleziona-partite')">Select games</button>
+            </form>
+            <table style="width: 15%;margin-top: 10px;">
+                <tr>
+                    <th>Totale partite in archivio</th>
+                    <th id="ngames">{{ngames}}</th>
+                </tr>
+            </table>
+        </div>
+
+        <div class="d-flex">
+
+          <div class="leftpane">
+            <div id="board" style="width: 92%;margin-bottom: 10px;text-align: left;float:left">{{board}}</div>
+            <img src="{{url_for('static', filename='reverse.jpg')}}" style="margin-left:5px;display: inline;" onclick="reverse()">
+            <label for="mosseFatte"><b>Mosse fatte:</b></label>
+            <div id="mosseFatte">Ancora nessuna mossa fatta</div>
+          </div>
+
+          <div class="middlepane">
+            <button type="button" value="go-back" onclick="goBack(this.value)">Annulla</button>
+            <button type="button" value="annulla-tutto" onclick="goBack(this.value)" style="display:inline;margin-bottom: 7px;">Annulla tutto</button>
+
+            <table id="tabellaMosseGiocate" style="width:100%;margin-bottom:10px">
+                <thead>
+                <tr>
+                    <th>Mosse</th>
+                    <th>Partite</th>
+                    <th>1-0</th>
+                    <th>1/2-1/2</th>
+                    <th>0-1</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for ind,row in mosse.iterrows() %}
+                    <tr>
+                    <td style="width:50px;text-align: center;"><button value="{{ ind }}" onclick="muovi(this.value.replace('+','%2B'))">{{ ind }}</button></td>
+                    <td>{{ row['freq'] }}</td>
+                    <td>{{ row['1-0'] }}%</td>
+                    <td>{{ row['0.5-0.5'] }}%</td>
+                    <td>{{ row['0-1'] }}%</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <label for="numeroPartite"><b>Partite con questa posizione:</b></label>
+            <div id="numeroPartite" style="display: inline;">{{partite}}</div>
+            <button type="button" value="get-file" onclick="download(this.value)" style="margin-left: 10px; display: inline;">Scarica partite</button>
+
+          </div>
+
+          <div class="rightpane">
+            <table style="margin-bottom: 20px; height: 25px;">
+                <tr>
+                    <td style="width: 160px;">Mossa del computer</td>
+                    <td id="mossaComputer" style="width: 60px;">{{mossacomputer}}</td>
+                </tr>
+            </table>
+
+            <label for="nuovamossacomputer">Nuova mossa computer:</label>
+            <input type="text" id="nuovamossacomputer" name="nuovamossacomputer" style="margin-bottom: 5px;">
+            <button type="button" onclick="aggiungiMossaComputer('aggiungi-mossa-computer')">Imposta come nuova mossa del computer</button>
+            
+            <h3>Engine</h3>
+
+            <form id="form1" style="margin-bottom: 10px;">
+                <h4>Valutazione posizione</h4>
+                <label for="time">Time limit:</label>
+                <input type="text" value="10" name="time" id="time">
+                <button type="button" onclick="getEvaluation()">Calcola</button>
+                <div id="evaluate"> - </div>
+            </form>
+
+            <form>
+                <h4>Miglior mossa</h4>
+                <label for="timebestmove">Time limit:</label>
+                <input type="text" id="timebestmove" name="timebestmove" value="10">
+                <button type="button" onclick="bestMove()">Calcola mossa computer</button>
+                <div id="bestmove"> - </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>        
+        // funzione che inverte la scacchiera
+        function reverse() {
+            $.ajax({
+                url: "/api/reverse",
+                type: "GET",
+                success: function(result) {
+                    $('#board').html(result);
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+        }
+
+        function download(nomeFunzione) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', "/api/" + nomeFunzione, true);
+            xhr.responseType = 'blob';
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                // Crea un elemento "a" per il download del file
+                var a = document.createElement('a');
+                var file = new Blob([xhr.response], {type: 'application/octet-stream'});
+                a.href = URL.createObjectURL(file);
+                a.download = 'partite.pgn'; // imposta il nome del file da scaricare
+                document.body.appendChild(a);
+                a.click();
+
+                // Rilascia l'oggetto URL creato
+                window.URL.revokeObjectURL(url);
+                }
+            };
+            xhr.send();
+        }
+
+        function getEvaluation() {
+            var time = $('#time').val();
+            $.ajax({
+                url: "/api/evaluate-pos?time=" + time,
+                type: "GET",
+                success: function(result) {
+                    $('#evaluate').html(result);
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+        }
+
+        function bestMove() {
+            var timebestmove = $('#timebestmove').val();
+            $.ajax({
+                url: "/api/best-move?timebestmove=" + timebestmove,
+                type: "GET",
+                success: function(result) {
+                            $('#bestmove').html(result);
+                        },
+                        error: function(error) {
+                            console.log(error);
+                        }
+            });
+        }
+        //funzione che annulla l'ultima mossa fatta
+        function goBack(nomeFunzione) {
+            $.ajax({
+                url: "/api/" + nomeFunzione,
+                type: "GET",
+                success: function(result) {
+                    $.ajax({
+                        url: "/api/mosse-fatte",
+                        type: "GET",
+                        success: function(result) {
+                            $('#mosseFatte').html(result);
+                        },
+                        error: function(error) {
+                            console.log(error);
+                        }
+                    });
+                    $.ajax({
+                        url: "/api/mostra-mossa-computer",
+                        type: "GET",
+                        success: function(result) {
+                            $('#mossaComputer').html(result);
+                        },
+                        error: function(error) {
+                            console.log(error);
+                        }
+                    });
+                    $.ajax({
+                        url: "/api/get-numero-partite",
+                        type: "GET",
+                        success: function(result) {
+                            $('#numeroPartite').html(result);
+                        },
+                        error: function(error) {
+                            console.log(error);
+                        }
+                    });
+                    $.ajax({
+                        url: "/api/show-board",
+                        type: "GET",
+                        success: function(result) {
+                                    $('#board').html(result);
+                                },
+                                error: function(error) {
+                                    console.log(error);
+                                }
+                    });
+                    $('#tabellaMosseGiocate').html(result);
+                },
+                error: function(result) {
+                    console.log(error);
+                }
+
+            });
+
+        }
+
+        //funzione che aggiunge la mossa del computer
+        function aggiungiMossaComputer(nomeFunzione) {
+            var mossacomputer = $('#nuovamossacomputer').val().replace('+','%2B');
+
+            $.ajax({
+                url: "/api/" + nomeFunzione + "?nuovamossacomputer=" + mossacomputer,
+                type: "GET",
+                success: function(result) {
+                    $('#mossaComputer').html(result);
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+        }
+
+
+
+        //funzione per aggiungere pertite all'archivio
+        function aggiungiDati(nomeFunzione) {
+            $.ajax({
+                url: "/api/" + nomeFunzione,
+                type: "GET",
+                success: function(result) {
+                    $.ajax({
+                        url: "/api/get-n-games",
+                        type: "GET",
+                        success: function(result) {
+                            $('#ngames').html(result);
+                        },
+                        error: function(error) {
+                            console.log(error);
+                        }
+                    });
+                    $.ajax({
+                        url: "/api/mosse-giocate",
+                        type: "GET",
+                        success: function(result) {
+                            $('#tabellaMosseGiocate').html(result);
+                        },
+                        error: function(error) {
+                            console.log(error);
+                        }
+                    });
+                    $.ajax({
+                        url: "/api/get-numero-partite",
+                        type: "GET",
+                        success: function(result) {
+                            $('#numeroPartite').html(result);
+                        },
+                        error: function(error) {
+                            console.log(error);
+                        }
+                    });
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+        }
+
+        //funzione che seleziona le partite di interesse
+        function selezionaPartite(nomeFunzione) {
+            var bianco = $('#bianco').val();
+            var nero = $('#nero').val();
+            var risultato = $('#risultato').val();
+
+            $.ajax({
+                url: "/api/" + nomeFunzione + "?bianco=" + bianco + "&nero=" + nero + "&risultato=" + risultato,
+                type: "GET",
+                success: function(result) {
+                    $.ajax({
+                        url: "/api/get-n-games",
+                        type: "GET",
+                        success: function(result) {
+                            $('#ngames').html(result);
+                        },
+                        error: function(error) {
+                            console.log(error);
+                        }
+                    });
+                    $.ajax({
+                        url: "/api/mosse-giocate",
+                        type: "GET",
+                        success: function(result) {
+                            $('#tabellaMosseGiocate').html(result);
+                        },
+                        error: function(error) {
+                            console.log(error);
+                        }
+                    });
+                    $.ajax({
+                        url: "/api/get-numero-partite",
+                        type: "GET",
+                        success: function(result) {
+                            $('#numeroPartite').html(result);
+                        },
+                        error: function(error) {
+                            console.log(error);
+                        }
+                    });                   
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+        }
+
+        //funzione che seleziona una mossa fra quelle mostrate
+        function muovi(mossa) {
+            $.ajax({
+                url: "/api/muovi" + "?mossa=" + mossa,
+                type: "GET",
+                success: function(result) {
+                    $.ajax({
+                        url: "/api/mosse-fatte",
+                        type: "GET",
+                        success: function(result) {
+                            $('#mosseFatte').html(result);
+                        },
+                        error: function(error) {
+                            console.log(error);
+                        }
+                    });
+                    $.ajax({
+                        url: "/api/mostra-mossa-computer",
+                        type: "GET",
+                        success: function(result) {
+                            $('#mossaComputer').html(result);
+                        },
+                        error: function(error) {
+                            console.log(error);
+                        }
+                    });
+                    $.ajax({
+                        url: "/api/get-numero-partite",
+                        type: "GET",
+                        success: function(result) {
+                            $('#numeroPartite').html(result);
+                        },
+                        error: function(error) {
+                            console.log(error);
+                        }
+                    });
+                    $.ajax({
+                        url: "/api/show-board",
+                        type: "GET",
+                        success: function(result) {
+                                    $('#board').html(result);
+                                },
+                                error: function(error) {
+                                    console.log(error);
+                                }
+                    });
+                    $('#tabellaMosseGiocate').html(result);
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

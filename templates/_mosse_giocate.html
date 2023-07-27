@@ -1,0 +1,20 @@
+<thead>
+  <tr>
+      <th>Mosse</th>
+      <th>Partite</th>
+      <th>1-0</th>
+      <th>1/2-1/2</th>
+      <th>0-1</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for ind,row in mosse.iterrows() %}
+      <tr>
+      <td style="width:50px;text-align: center;"><button value="{{ ind }}" onclick="muovi(this.value.replace('+','%2B'))">{{ ind }}</button></td>
+      <td>{{ row['freq'] }}</td>
+      <td>{{ row['1-0'] }}%</td>
+      <td>{{ row['0.5-0.5'] }}%</td>
+      <td>{{ row['0-1'] }}%</td>
+      </tr>
+  {% endfor %}
+  </tbody>
